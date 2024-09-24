@@ -15,9 +15,8 @@ from users.serializers import (
     InviteUserSerializer,
 )
 
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 
-from users.serializers import UserSerializer
 from users.permissions import IsAdmin
 
 User = get_user_model()
