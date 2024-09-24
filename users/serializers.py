@@ -1,3 +1,4 @@
+import re
 from rest_framework import serializers
 
 from users.choices import UserRole
@@ -40,3 +41,35 @@ class UserSerializer(serializers.ModelSerializer):
 
 class InviteUserSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+class AcceptInviteSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_password(self, value):
+        """
+        Ensure the password meets the basic security requirements:
+        - At least one digit
+        - At least one uppercase letter
+        - At least one special character
+        """
+        if not re.search(r"\d", value):
+            raise serializers.ValidationError(
+                "Password must contain at least one digit."
+            )
+        if not re.search(r"[A-Z]", value):
+            raise serializers.ValidationError(
+                "Password must contain at least one uppercase letter."
+            )
+        if not re.search(r"[@$!%*?&]", value):
+            raise serializers.ValidationError(
+                "Password must contain at least one special character (@, $, !, %, *, ?, &)."
+            )
+
+        return value
+
+    def save(self, user: User):
+        user.set_password(self.validated_data["password"])
+        user.is_active = True
+        user.save()
+        return user

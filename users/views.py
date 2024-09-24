@@ -1,16 +1,21 @@
+from django.core import signing
+from django.utils.crypto import get_random_string
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
 
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from users.choices import UserRole
 from users.serializers import (
+    AcceptInviteSerializer,
     CreateUserSerializer,
+    InviteUserSerializer,
 )
 
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.core.mail import send_mail
-from django.conf import settings
-from django.contrib.auth import get_user_model
 
 from users.serializers import UserSerializer
 from users.permissions import IsAdmin
@@ -55,40 +60,72 @@ class UserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         Invite a clinician by sending an email.
         Only Admin users can perform this action.
         """
-        email = request.data.get("email")
-        if not email:
-            return Response(
-                {"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer = InviteUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
 
-        role = "Clinician"  # For invitation, we'll assume it's always for Clinicians.
+        role = UserRole.CLINICIAN
 
-        # Check if the user already exists
         if User.objects.filter(username=email).exists():
             return Response(
                 {"detail": "User with this email already exists."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Create an inactive user account
-        User.objects.create(
+        user = User.objects.create(
             username=email,
             email=email,
             role=role,
             is_active=False,
         )
 
-        invite_link = f"{settings.FRONTEND_URL}/invite/accept?email={email}"
-        subject = "You're Invited to Kochanet!"
-        message = f"Hello,\n\nYou've been invited to join Kochanet as a Clinician. Click the link below to accept the invitation and set up your account:\n\n{invite_link}\n\nBest regards,\nKochanet Team"
+        token = signing.dumps(
+            {
+                "user_id": user.id,
+                "token": get_random_string(32),
+            }
+        )
+
+        invite_link = f"{settings.FRONTEND_URL}/accept-invite/{token}"
+
+        subject = "Clinician Invitation to Join Kochanet"
+        message = f"You have been invited to join Kochanet as a clinician. Click the following link to complete your registration: {invite_link}"
+        from_email = settings.DEFAULT_FROM_EMAIL
+
         send_mail(
             subject,
             message,
-            settings.DEFAULT_FROM_EMAIL,
+            from_email,
             [email],
             fail_silently=False,
         )
 
-        return Response(
-            {"detail": f"Invitation sent to {email}."}, status=status.HTTP_200_OK
-        )
+        return Response({"message": "Invitation sent."}, status=200)
+
+    @action(detail=False, methods=["post"], url_path="accept-invite/(?P<token>[^/.]+)")
+    def accept_invite(self, request, token):
+        """
+        Accept an invitation by validating the token,
+        setting the user's password, and activating the account.
+        """
+        try:
+            data = signing.loads(token)
+            user_id = data.get("user_id")
+            user = User.objects.get(id=user_id, is_active=False)
+        except (User.DoesNotExist, signing.BadSignature):
+            return Response(
+                {"error": "Invalid or expired token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = AcceptInviteSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(
+                {"message": "Account activated successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

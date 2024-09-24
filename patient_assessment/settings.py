@@ -29,6 +29,7 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = ["*"]  # because this is a test project
 
+ENVIRONMENT = config("ENVIRONMENT", default="local")
 
 # Application definition
 
@@ -143,6 +144,21 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
+
+if ENVIRONMENT != "production":
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+    DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+
+# Add this if you have a frontend that handles the acceptance of invitations
+FRONTEND_URL = config("FRONTEND_URL")
 
 
 # Static files (CSS, JavaScript, Images)
