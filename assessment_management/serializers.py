@@ -44,7 +44,7 @@ class AnswerCreateSerializer(serializers.ModelSerializer):
         model = Answer
         fields = ["question_id", "assessment", "text", "score"]
 
-    def save(self, validated_data):
+    def create(self, validated_data):
         user = self.context["request"].user
         tenant = getattr(user, "tenant", None)
 
