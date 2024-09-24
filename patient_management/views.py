@@ -4,8 +4,10 @@ from rest_framework.filters import OrderingFilter
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from users.permissions import IsAdmin, IsTenantUser
+
 from .models import Patient
-from .serializers import PatientSerializer
+from .serializers import PatientCreateSerializer, PatientSerializer
 
 
 class PatientViewSet(viewsets.ModelViewSet):
@@ -13,9 +15,8 @@ class PatientViewSet(viewsets.ModelViewSet):
     A viewset for viewing and editing patient instances.
     """
 
-    serializer_class = PatientSerializer
     queryset = Patient.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsTenantUser | IsAdmin]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = [
         "gender",
@@ -25,8 +26,7 @@ class PatientViewSet(viewsets.ModelViewSet):
     ordering_fields = ["full_name", "date_of_birth", "created_at"]
     ordering = ["full_name"]
 
-    def perform_create(self, serializer):
-        """
-        Override this method if you need to customize how the instance is saved.
-        """
-        serializer.save()
+    def get_serializer_class(self):
+        if self.action == "create":
+            return PatientCreateSerializer
+        return PatientSerializer

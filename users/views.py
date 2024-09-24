@@ -27,6 +27,7 @@ User = get_user_model()
 class AuthenticationViewset(
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
+    mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
     serializer_class = CreateUserSerializer
@@ -35,16 +36,15 @@ class AuthenticationViewset(
     permission_classes = [AllowAny]
 
 
-class UserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class UserViewSet(viewsets.GenericViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
 
     def get_permissions(self):
         """
         Override permissions so that only admins can invite users.
         """
         if self.action == "invite_user":
-            permission_classes = [IsAuthenticated, IsAdmin]
+            permission_classes = [IsAdmin]
         else:
             permission_classes = [AllowAny]
         return [permission() for permission in permission_classes]
@@ -53,7 +53,7 @@ class UserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         detail=False,
         methods=["post"],
         url_path="invite",
-        permission_classes=[IsAuthenticated, IsAdmin],
+        permission_classes=[IsAdmin],
     )
     def invite_user(self, request):
         """
@@ -66,7 +66,7 @@ class UserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         role = UserRole.CLINICIAN
 
-        if User.objects.filter(username=email).exists():
+        if User.objects.filter(email=email).exists():
             return Response(
                 {"detail": "User with this email already exists."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -82,6 +82,7 @@ class UserViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         token = signing.dumps(
             {
                 "user_id": user.id,
+                "email": email,
                 "token": get_random_string(32),
             }
         )

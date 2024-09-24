@@ -46,8 +46,9 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework_simplejwt",
     "django_filters",
+    "drf_yasg",
     # main apps
-    "asset_management",
+    "assessment_management",
     "patient_management",
     "users",
 ]
@@ -60,6 +61,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "users.middleware.TenantMiddleware",
 ]
 
 AUTH_USER_MODEL = "users.User"
@@ -136,6 +139,8 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10,
 }
 
+CSRF_TRUSTED_ORIGINS = ["http://localhost:8000"]
+CSRF_COOKIE_HTTPONLY = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -184,4 +189,16 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": 'JWT Authorization header using the Bearer scheme. Example: "Bearer {token}"',
+        }
+    },
+    "USE_SESSION_AUTH": False,
 }

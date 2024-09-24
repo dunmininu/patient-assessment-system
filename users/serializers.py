@@ -2,7 +2,7 @@ import re
 from rest_framework import serializers
 
 from users.choices import UserRole
-from users.models import User
+from users.models import Tenant, User
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -19,7 +19,12 @@ class CreateUserSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data, role=UserRole.ADMIN)
+        validated_data.pop("password_two")
+        user = User.objects.create_user(**validated_data, role=UserRole.ADMIN)
+        user.set_password(validated_data["password"])
+        user.save()
+
+        return user
 
 
 class LoginSerializer(serializers.Serializer):
@@ -44,6 +49,9 @@ class InviteUserSerializer(serializers.Serializer):
 
 
 class AcceptInviteSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
     password = serializers.CharField(write_only=True, min_length=8)
 
     def validate_password(self, value):
@@ -69,7 +77,28 @@ class AcceptInviteSerializer(serializers.Serializer):
         return value
 
     def save(self, user: User):
+        try:
+            # Update user information from validated data
+            self._update_user_fields(user)
+
+            # Create a new tenant for the user
+            tenant = self._create_tenant(self.validated_data["username"])
+
+            user.tenant = tenant
+            user.is_active = True
+            user.save()
+
+            return user
+        except Exception as e:
+            raise serializers.ValidationError(
+                f"An error occurred while saving the user: {str(e)}"
+            )
+
+    def _update_user_fields(self, user: User):
+        user.username = self.validated_data["username"]
+        user.first_name = self.validated_data["first_name"]
+        user.last_name = self.validated_data["last_name"]
         user.set_password(self.validated_data["password"])
-        user.is_active = True
-        user.save()
-        return user
+
+    def _create_tenant(self, username: str) -> Tenant:
+        return Tenant.objects.create(name=username)

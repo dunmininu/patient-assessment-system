@@ -1,124 +1,313 @@
-Kochanet Patient Assessment System
+# Kochanet Patient Assessment System
 
-Overview
+## Overview
 
-    This is a backend application for a patient assessment system where clinicians can manage patient assessments.
-    The application is built using Django and Django REST Framework (DRF), with PostgreSQL as the database. Clinicians can be invited by admins to manage assessments, and the system includes user authentication and email invitation features.
+The Kochanet Patient Assessment System is a backend application designed to manage patient assessments by clinicians. Built using Django and Django REST Framework (DRF), it leverages PostgreSQL for the database and handles user authentication, including email invitations for clinician registration.
 
-Project Structure:
+The system allows admins to invite clinicians to manage patient assessments, and it includes multi-tenancy support to isolate data for different tenants (clinicians). JWT-based authentication is implemented for secure login.
 
-    Backend: Django
-    Database: PostgreSQL
-    API: Django REST Framework (DRF)
-    Environment Handling: django-decouple
-    Email: Django's send_mail (console backend for development)
+## Project Structure:
 
-Key Features
+- **Backend**: Django
+- **Database**: PostgreSQL
+- **API**: Django REST Framework (DRF)
+- **Environment Handling**: `django-decouple`
+- **Email**: Using Django's `send_mail` (console backend for development)
 
-    User Registration & Authentication:
-    Admins can invite clinicians via email.
-    Clinicians are registered with an inactive account until they accept the invitation.
-    JWT token-based authentication for login (using rest_framework_simplejwt).
+## Key Features
 
-User Roles:
+1. **User Registration & Authentication**:
 
-    Admin: Can invite clinicians.
-    Clinician: Receives invitation and manages assessments.
+   - Admins can invite clinicians via email.
+   - Clinicians receive an invitation and can register with an inactive account until they accept the invitation.
+   - JWT token-based authentication for login (using `rest_framework_simplejwt`).
 
-Email Invitation:
+2. **User Roles**:
 
-    Admins invite clinicians by sending an email with a custom invite link.
-    Emails are currently printed to the console for development purposes.
+   - **Admin**: Can invite clinicians and manage system-wide configurations.
+   - **Clinician**: Receives an invitation, manages assessments, and handles patient-related operations.
 
-Database Configuration:
+3. **Email Invitation**:
 
-    PostgreSQL is used for database management.
-    Environment variables are managed using django-decouple.
+   - Admins can invite clinicians by sending an email with a custom invite link.
+   - Emails are printed to the console in development mode.
 
-Installation
-Clone the Repository:
+4. **Assessment System**:
 
-    ```git clone https://github.com/your_username/kochanet-patient-assessment.git```
-    ```cd kochanet-patient-assessment```
+   - Clinicians can create and manage assessments for patients.
+   - Final scores for assessments are calculated based on the answers provided by clinicians.
+   - Each assessment and answer is tied to a specific clinician, ensuring multi-tenancy support.
 
-Install Dependencies: Ensure you have pipenv installed:
+5. **Multi-Tenancy**:
 
-    ```pipenv install --dev```
+   - Each clinician's data is isolated from other tenants.
+   - All patient, assessment, and related data is scoped to the tenant (clinician).
 
-Set Up Environment Variables: Create a .env file in the root of the project:
+6. **Database Configuration**:
+   - PostgreSQL is used for reliable and scalable database management.
+   - Environment variables are managed using `django-decouple` for better security and separation of configurations.
 
-    DEBUG=True
-    SECRET_KEY=your-secret-key
-    DATABASE_URL=postgres://username:password@localhost:5432/yourdbname
-    FRONTEND_URL=https://your-frontend-url.com
+## Installation
 
-Set Up the Database: Make sure PostgreSQL is installed and running. Run the following commands to set up your database:
+### Clone the Repository:
 
-    ```pipenv run python manage.py migrate```
-    ```pipenv run python manage.py createsuperuser```
+```bash
+git clone https://github.com/dunmininu/patient-assessment-system.git
+cd patient-assessment-system
+```
 
-Run the Development Server:
+### Install Dependencies:
 
-    pipenv run python manage.py runserver
+Ensure you have `pipenv` installed to manage the Python environment and dependencies:
 
-View Emails in Console: For now, invitation emails are printed in the console for development purposes.
+```bash
+pipenv install --dev
+```
 
-API Endpoints
+### Set Up Environment Variables:
 
-User Registration & Login:
+Create a `.env` file in the root of the project with the following variables:
 
-    POST /api/login/: Login and retrieve JWT token.
-    Invite Clinician (Admin Only):
-    POST /api/register/invite/: Invite a clinician by sending an email.
+```bash
+DEBUG=True
+SECRET_KEY=test
+DATABASE_NAME=test
+DATABASE_USER=test
+DATABASE_PASSWORD=test
+DATABASE_HOST=test
+DATABASE_PORT=5432
+ENVIRONMENT=local
+FRONTEND_URL=test
+EMAIL_HOST_USER=test
+EMAIL_HOST_PASSWORD=test
+DEFAULT_FROM_EMAIL=test
+```
 
-Progress So Far
+### Set Up the Database:
 
-    Configured PostgreSQL database with django-decouple for environment variable management.
-    Implemented custom user model with role field (Admin, Clinician).
-    Implemented JWT authentication using rest_framework_simplejwt.
-    Admin-only invitation feature added to allow admins to invite clinicians.
-    Configured email invitations to print to the console using Django's console email backend for development.
+Ensure PostgreSQL is installed and running. Then, run the following commands to set up the database:
 
-Next Steps
+```bash
+pipenv run python manage.py migrate
+pipenv run python manage.py createsuperuser
+```
 
-    Implement clinician registration and account activation via the invite link.
-    Add patient management (CRUD operations for patients).
-    Implement assessment creation and management (including filters, pagination, etc.).
-    Implement multi-tenancy to isolate data for different users.
+### Run the Development Server:
 
-Deployment to AWS
+```bash
+pipenv run python manage.py runserver
+```
 
-To deploy the application to AWS, follow these steps:
+### View Emails in the Console:
 
-    Set up an EC2 Instance:
-    Launch an Ubuntu EC2 instance.
-    SSH into the instance and install dependencies such as Python, PostgreSQL, and nginx.
+For development purposes, invitation emails will be printed to the console.
 
-    Install Django & PostgreSQL:
-    Set up a virtual environment for the project and install dependencies.
-    Set Up Gunicorn:
-    Install Gunicorn to serve the Django application.
-    Configure systemd to run Gunicorn as a service.
-    Configure Nginx:
-    Install and configure nginx as a reverse proxy to pass requests to Gunicorn.
-    Database Configuration:
+## API Endpoints
 
-    Set up a PostgreSQL instance either locally on the EC2 machine or using Amazon RDS.
-    Update environment variables accordingly.
+### User Registration & Login:
 
-Handle Static Files:
+- **POST** `/api/login/`: Login and retrieve a JWT token.
 
-    Use Django's collectstatic to handle static files.
-    Configure AWS S3 or other static file storage services if needed.
-    Domain & SSL:
-    Use AWS Route 53 to manage your domain.
-    Set up SSL certificates using Let’s Encrypt and configure them in nginx.
+### Invite Clinician (Admin Only):
 
-Challenges Faced
+- **POST** `/api/register/invite/`: Invite a clinician by sending an email.
 
-    Handling email invitation logic and permissions.
-    Ensuring proper permissions between admins and clinicians.
-    Additional Features to Be Added
-    Fully functional clinician registration using invite links.
-    Patient and assessment management with multi-tenancy support.
-    Proper production-ready email sending configuration using SMTP.
+### Assessments:
+
+- **POST** `/api/assessments/`: Create a new assessment.
+- **GET** `/api/assessments/`: Retrieve a list of assessments.
+- **GET** `/api/assessments/{id}/`: Retrieve details of a specific assessment.
+- **PATCH** `/api/assessments/{id}/`: Update an existing assessment.
+- **DELETE** `/api/assessments/{id}/`: Delete an assessment.
+
+## Progress So Far
+
+- PostgreSQL database has been configured with `django-decouple` for environment variable management.
+- Custom user model implemented with role-based fields (Admin, Clinician).
+- JWT authentication integrated using `rest_framework_simplejwt`.
+- Admins can invite clinicians to the platform via email.
+- Console email backend is set up to display invitation emails in the development environment.
+- Assessment models created, including multi-tenancy support for tenant-based isolation of data.
+- Implement clinician registration and account activation via the invite link.
+- Add CRUD operations for managing patients.
+- Finalize assessment creation and management features (e.g., score calculation, filters, and pagination).
+- Extend the email system to support production-ready email delivery (e.g., using SMTP or a third-party email service).
+- Implement more robust multi-tenancy features to further isolate data for different users and tenants.
+
+## Next Steps
+
+- Submit and make a video
+
+---
+
+### Additional Notes
+
+- **Multi-Tenancy**: Ensured that tenant-scoped data is handled properly by using the tenant field in models like `Assessment`, `Patient`, `Question`, and `Answer`. This isolates data based on the clinician.
+
+### Explanation of the AWS Deployment Process
+
+Deploying a Django application on AWS can involve several steps, typically utilizing services such as Amazon EC2, RDS, and S3. I would use EC2 in this case
+
+#### 1. **Set Up AWS Account**
+
+- Create an AWS account if you don’t already have one.
+- You would need a card if you're setting up a new account, aws will charge you a dollar and refund it later. it's just to check that your card is active
+- Log in to the AWS Management Console.
+
+#### 2. **Launch an EC2 Instance**
+
+- Go to the **EC2 Dashboard**.
+- Click on **Launch Instance** and select an Amazon Machine Image (AMI). For Django, an Ubuntu or Amazon Linux AMI is commonly used. I am going with the Ubuntu instance, this one I am comfortable with. for testing purposes, you can choose the free tier volume type
+- Choose an instance type based on your application’s requirements (e.g., t2.micro for testing, also free).
+- for the key pair, you can choose an existing one or create one on the fly, but make sure to download it after creation
+- Configure instance details, including network settings and IAM roles if needed.
+- Add storage as per your application needs.
+- Configure security group settings to allow HTTP (port 80), HTTPS (port 443), and SSH (port 22) access.
+- Launch the instance and download the key pair (.pem file) for SSH access.
+
+#### 3. **Connect to the EC2 Instance**
+
+- Use SSH to connect to your EC2 instance. Use the following command:
+
+```bash
+ssh -i /path/to/your-key.pem ubuntu@your-ec2-public-dns
+```
+
+#### 4. **Install Required Software**
+
+- Update the package manager:
+
+```bash
+sudo apt update
+sudo apt upgrade
+```
+
+- Install necessary packages (Python, pip, virtualenv, and a web server):
+
+```bash
+sudo apt install python3-pip python3-dev libpq-dev postgresql postgresql-contrib nginx curl
+```
+
+- Install `git` to clone your repository:
+
+```bash
+sudo apt install git
+```
+
+#### 5. **Clone Your Django Application**
+
+- Clone your application repository from GitHub or any other version control service:
+
+```bash
+git clone https://github.com/dunmininu/patient-assessment-system.git
+cd patient-assessment-system
+```
+
+#### 6. **Set Up a Virtual Environment**
+
+- Create and activate a virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+- Install your project dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+#### 7. **Configure the Database**
+
+- Set up a PostgreSQL database using RDS (or use a local database on the EC2 instance).
+  - If using RDS:
+    - Create a new RDS instance in the AWS Management Console.
+    - Note the endpoint, database name, username, and password.
+      (note: we shall not use this for cost efficiency on testing)
+  - If using a local PostgreSQL database, set it up accordingly.
+- Update your Django `.env` with the database credentials.
+
+#### 8. **Migrate Database**
+
+- Run migrations to set up the database schema:
+
+```bash
+python manage.py migrate
+```
+
+#### 9. **Collect Static Files**
+
+- Collect static files to serve them using Nginx:
+
+```bash
+python manage.py collectstatic
+```
+
+#### 10. **Configure Gunicorn**
+
+- Install Gunicorn:
+
+```bash
+pip install gunicorn
+```
+
+- Run your application using Gunicorn:
+
+```bash
+gunicorn --bind 0.0.0.0:8000 patient_assessment.wsgi:application
+```
+
+#### 11. **Configure Nginx**
+
+- Create a new Nginx configuration file:
+
+```bash
+sudo nano /etc/nginx/sites-available/patient_assessment
+```
+
+- Add the following configuration:
+
+```nginx
+server {
+    listen 80;
+    server_name your_domain_or_public_ip;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        root /path/to/your/static/files; <!-- this is the static files directory that was created after running collectstatic above -->
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/path/to/your/your_project.sock;
+    }
+}
+```
+
+- Enable the configuration by creating a symbolic link:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/patient_assessment /etc/nginx/sites-enabled
+```
+
+- Test the Nginx configuration:
+
+```bash
+sudo nginx -t
+```
+
+- Restart Nginx:
+
+```bash
+sudo systemctl restart nginx
+```
+
+#### 12. **Domain Configuration (Optional)**
+
+- If you have a domain name, configure it to point to your EC2 instance's public IP address. (just a thought, I can't elaborate on this)
+
+#### 13. **Security Configuration**
+
+- Set up SSL certificates using Let's Encrypt for secure HTTPS connections.
+- Adjust security group settings in AWS to limit access to your instance.

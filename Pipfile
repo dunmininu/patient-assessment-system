@@ -15,6 +15,7 @@ django-debug-toolbar = "*"
 django-decouple = "*"
 pytest = "*"
 pytest-django = "*"
+drf-yasg = "*"
 
 [dev-packages]
 ruff = "*"
